@@ -9,11 +9,17 @@ from firebase_admin import credentials, db
 # 🔧 Firebase Bağlantısı (sadece bir kez initialize)
 # =============================
 if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase_key.json")  # Senin Firebase key dosyan
-    firebase_admin.initialize_app(cred, {
-        "databaseURL": "https://finansapp-47c29-default-rtdb.europe-west1.firebasedatabase.app/"
-    })
+   import json
+import firebase_admin
+from firebase_admin import credentials, db
+import streamlit as st
 
+if not firebase_admin._apps:
+    cred_dict = json.loads(st.secrets["FIREBASE"]["FIREBASE_KEY"])
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred, {
+        "databaseURL": st.secrets["FIREBASE"]["DATABASE_URL"]
+    })
 # =============================
 # 🧑‍💻 Kullanıcı Girişi
 # =============================
@@ -118,3 +124,4 @@ if not df.empty:
     st.line_chart(gunluk_toplam)
 else:
     st.info("Analiz için yeterli veri bulunamadı.")
+
