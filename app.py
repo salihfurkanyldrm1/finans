@@ -4,22 +4,18 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import firebase_admin
 from firebase_admin import credentials, db
+import json
 
 # =============================
 # 🔧 Firebase Bağlantısı (sadece bir kez initialize)
 # =============================
-if not firebase_admin._apps:
-   import json
-import firebase_admin
-from firebase_admin import credentials, db
-import streamlit as st
-
 if not firebase_admin._apps:
     cred_dict = json.loads(st.secrets["FIREBASE"]["FIREBASE_KEY"])
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred, {
         "databaseURL": st.secrets["FIREBASE"]["DATABASE_URL"]
     })
+
 # =============================
 # 🧑‍💻 Kullanıcı Girişi
 # =============================
@@ -124,4 +120,3 @@ if not df.empty:
     st.line_chart(gunluk_toplam)
 else:
     st.info("Analiz için yeterli veri bulunamadı.")
-
