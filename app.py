@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import firebase_admin
-from firebase_admin import credentials, db
+from firebase_admin import credentials, db, auth
 import json
 
 # =============================
@@ -17,17 +17,33 @@ if not firebase_admin._apps:
     })
 
 # =============================
-# 🧑‍💻 Kullanıcı Girişi
+# 🧑‍💻 Kullanıcı Girişi (Firebase Auth)
 # =============================
 st.title("💸 Kişisel Finans Takip Uygulaması")
 st.write("Her kullanıcı kendi verilerini görür, tüm kayıtlar bulutta saklanır ☁️")
 
-kullanici = st.text_input("Kullanıcı adını gir:", placeholder="örnek: salih123")
-if not kullanici:
-    st.warning("Devam etmek için bir kullanıcı adı gir.")
+# Eğer daha önce giriş yapıldıysa session_state kullan
+if 'uid' not in st.session_state:
+    email = st.text_input("Email girin:")
+    sifre = st.text_input("Şifre girin:", type="password")
+
+    if st.button("Giriş Yap"):
+        try:
+            # Firebase Admin SDK email doğrulama
+            user = auth.get_user_by_email(email)
+            st.success(f"Giriş başarılı! Hoşgeldiniz {user.email}")
+            st.session_state['uid'] = user.uid
+        except auth.UserNotFoundError:
+            st.error("Kullanıcı bulunamadı. Emailinizi kontrol edin.")
+        except Exception as e:
+            st.error(f"Hata: {e}")
+
+# Giriş yapılmadan devam etme
+if 'uid' not in st.session_state:
     st.stop()
 
-user_ref = db.reference(f"kullanicilar/{kullanici}")
+# UID tabanlı kullanıcı referansı
+user_ref = db.reference(f"kullanicilar/{st.session_state['uid']}")
 
 # =============================
 # 📊 Veri Yükleme
@@ -40,16 +56,14 @@ df = pd.DataFrame(veri) if veri else pd.DataFrame(columns=["Tarih", "Tür", "Kat
 # =============================
 st.header("📝 Yeni Kayıt Ekle")
 
-# 🔘 Gelir / Gider seçimi
 tur = st.radio("Tür seçin:", ["Gelir", "Gider"], horizontal=True)
 
-# Kategori ve Gider Türü conditional
 if tur == "Gelir":
     kategori = st.selectbox("Kategori seçin:", ["Maaş", "Ek Gelir", "Yatırım", "Diğer"])
-    gider_turu = "-"  # Gelir için görünmez
+    gider_turu = "-"
 else:
     kategori = st.selectbox("Kategori seçin:", ["Market", "Fatura", "Kişisel Bakım", "Ulaşım", "Eğitim", "Sağlık", "Cafe/Restaurant", "Diğer"])
-    gider_turu = st.radio("Gider türü seçin:", ["Zorunlu", "Keyfi"])  # sadece giderde görünsün
+    gider_turu = st.radio("Gider türü seçin:", ["Zorunlu", "Keyfi"])
 
 tutar = st.number_input("Tutar (₺)", min_value=0.0, step=10.0)
 
@@ -120,3 +134,4 @@ if not df.empty:
     st.line_chart(gunluk_toplam)
 else:
     st.info("Analiz için yeterli veri bulunamadı.")
+
